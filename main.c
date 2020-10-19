@@ -115,17 +115,15 @@ void my_packet_handler(
     l2tp_priority = (*(l2tp_header)) & 0x01;
     l2tp_version = (*(l2tp_header + 1)) & 0x0F;
     if (l2tp_version == 0x02)
-        printf("Version: L2TP Ver.2");
+        printf("Version: L2TP Ver.2\n");
     else {
-        printf("L2TP Version error!")
+        printf("L2TP Version error!\n")
         return;
     }
-    if (l2tp_type) {
+    if (l2tp_type)
         printf("Type: l2tp_type is: %d, L2TP carry control message.\n", l2tp_type);
-    }
-    else {
+    else
         printf("Type: l2tp_type is: %d, L2TP carry data message.\n", l2tp_type);
-    }
     if (l2tp_len_field)
         printf("Length: bit given %d.\n", l2tp_len_field);
     else
@@ -144,25 +142,60 @@ void my_packet_handler(
         printf("Priority: not given, P is %d.\n", l2tp_priority);
     // l2tp header 2-3 byte
     int l2tp_total_length;
-    l2tp_total_length = (l2tp_len_field) ? (((*(l2tp_header + 2)) & 0xFF) << 8) | ((*(l2tp_header + 3)) & 0xFF) : 0;
-    if (l2tp_total_length == 0) {
-        printf("L2TP Length: set to %d. wft?");
-        return;
+    int l2tp_total_length_bias;
+    l2tp_total_length_bias = (l2tp_len_field) ? 2 : 0;
+    if (l2tp_total_length_bias) {
+        l2tp_total_length = (l2tp_len_field) ?
+            (((*(l2tp_header + l2tp_total_length_bias)) & 0xFF) << 8) | ((*(l2tp_header + l2tp_total_length_bias + 1)) & 0xFF) : 0;
+        printf("L2TP length: l2tp datagram total length is %d byte.\n");
     }
     else
-        printf("L2TP Length: l2tp datagram total length is %d byte.\n", l2tp_total_length);
+        printf("L2TP length: not set.\n");
     // l2tp header 4~7 byte
-    int tunnel_id, session_id;
-    tunnel_id = (((*(l2tp_header + 4)) & 0xFF) << 8) | ((*(l2tp_header + 5)) & 0xFF);
-    session_id = (((*(l2tp_header + 6)) & 0xFF) << 8) | ((*(l2tp_header + 7)) & 0xFF);
-    if (tunnel_id == 0 || session_id == 0)
+    int l2tp_tunnel_id, l2tp_session_id;
+    int l2tp_tunnel_id_bias, l2tp_session_id_bias;
+    l2tp_tunnel_id_bias = (l2tp_len_field) ? 4 : 2; // 4 or 2(without Length)
+    l2tp_session_id_bias = l2tp_tunnel_id_bias + 2;
+    l2tp_tunnel_id = (((*(l2tp_header + l2tp_tunnel_id_bias)) & 0xFF) << 8)
+                    | ((*(l2tp_header + l2tp_tunnel_id_bias + 1)) & 0xFF);
+    l2tp_session_id = (((*(l2tp_header + l2tp_session_id_bias)) & 0xFF) << 8)
+                    | ((*(l2tp_header + l2tp_session_id_bias + 1)) & 0xFF);
+    if (l2tp_tunnel_id == 0 || l2tp_session_id == 0) {
+        printf("Tunnel id or Session id eq 0.");
         return;
+    }
     else {
-        printf("Tunnel Id: %d\n", tunnel_id);
-        printf("Session Id: %d\n", session_id);
+        printf("Tunnel Id: %d\n", l2tp_tunnel_id);
+        printf("Session Id: %d\n", l2tp_session_id);
     }
     // l2tp header 8-9 & 10-11 byte
-    // TODO:
+    int l2tp_Ns, l2tp_Nr;
+    int l2tp_Ns_bias, l2tp_Nr_bias;
+    l2tp_Ns_bias = (l2tp_sequence_field) ?
+                    ((l2tp_len_field) ? 8 : 6) : 0;
+    l2tp_Nr_bias = (l2tp_sequence_field) ? l2tp_Ns_bias + 2 : 0;
+    if (l2tp_Ns_bias || l2tp_Nr_bias) {
+        l2tp_Ns = (((*(l2tp_header + l2tp_Ns_bias)) & 0xFF) << 8)
+                | ((*(l2tp_header + l2tp_Ns_bias + 1)) & 0xFF);
+        l2tp_Nr = (((*(l2tp_header + l2tp_Nr_bias)) & 0xFF) << 8)
+                | ((*(l2tp_header + l2tp_Nr_bias + 1)) &0xFF);
+        printf("Ns(next sequence number): %d.\n", l2tp_Ns);
+        printf("Nr(next control message received): %d.\n", l2tp_Nr);
+    }
+    else
+        printf("Ns and Nr not present.\n");
+    // l2tp header 12-13
+    int l2tp_offset;
+    int l2tp_offset_bias;
+    l2tp_offset_bias = (l2tp_offset_field) ? (
+        l2tp_len_field ? (l2tp_sequence_field ? 12 : 8) : (l2tp_sequence_field ? 10 : 6)
+    ) : 0;
+    l2tp_offset = (((*(l2tp_header + l2tp_offset_bias)) & 0xFF) << 8)
+            | ((*(l2tp_header + l2tp_offset_bias + 1)) & 0xFF);
+    if (l2tp_offset_bias)
+        printf("Offset size(octets past L2TP header): %d.\n");
+    else
+        printf("Offset size not present.\n");
 
     int total_headers_size = ethernet_header_length+ip_header_length+udp_header_length;
     printf("size of header caplen: %d bytes\n", header->caplen);
