@@ -117,7 +117,7 @@ void my_packet_handler(
     if (l2tp_version == 0x02)
         printf("Version: L2TP Ver.2\n");
     else {
-        printf("L2TP Version error!\n")
+        printf("L2TP Version error!\n");
         return;
     }
     if (l2tp_type)
