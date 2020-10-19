@@ -147,7 +147,7 @@ void my_packet_handler(
     if (l2tp_total_length_bias) {
         l2tp_total_length = (l2tp_len_field) ?
             (((*(l2tp_header + l2tp_total_length_bias)) & 0xFF) << 8) | ((*(l2tp_header + l2tp_total_length_bias + 1)) & 0xFF) : 0;
-        printf("L2TP length: l2tp datagram total length is %d byte.\n");
+        printf("L2TP length: l2tp datagram total length is %d byte.\n", l2tp_total_length);
     }
     else
         printf("L2TP length: not set.\n");
@@ -193,15 +193,18 @@ void my_packet_handler(
     l2tp_offset = (((*(l2tp_header + l2tp_offset_bias)) & 0xFF) << 8)
             | ((*(l2tp_header + l2tp_offset_bias + 1)) & 0xFF);
     if (l2tp_offset_bias)
-        printf("Offset size(octets past L2TP header): %d.\n");
+        printf("Offset size(octets past L2TP header): %d.\n", l2tp_offset);
     else
         printf("Offset size not present.\n");
 
-    int total_headers_size = ethernet_header_length+ip_header_length+udp_header_length;
+    l2tp_header_length = 1 + l2tp_len_field * 2 + 4 + l2tp_sequence_field * 4 + l2tp_offset_field * 2;
+    printf("L2TP header length: %d\n", l2tp_header_length);
+
+    int total_headers_size = ethernet_header_length + ip_header_length + udp_header_length + l2tp_header_length;
     printf("size of header caplen: %d bytes\n", header->caplen);
     printf("Size of all headers combined: %d bytes\n", total_headers_size);
     payload_length = header->caplen -
-        (ethernet_header_length + ip_header_length + udp_header_length);
+        (ethernet_header_length + ip_header_length + udp_header_length + l2tp_header_length);
     printf("Payload size: %d bytes\n", payload_length);
     payload = packet + total_headers_size;
     printf("Memory address where payload begins: %p\n\n", payload);
