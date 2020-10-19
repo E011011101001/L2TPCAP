@@ -212,12 +212,20 @@ void my_packet_handler(
     /* Print payload in ASCII */
     if (payload_length > 0) {
         const u_char *temp_pointer = payload;
+        u_char temp_array[16] = { 0 };
         int byte_count = 0;
         while (byte_count < payload_length) {
             if ( byte_count % 16 == 0 && byte_count) {
+                printf(" |        ");
+                unsigned int index;
+                for (index = 0; index < 16; ++index) {
+                    printf("%c", temp_array[index]);
+                    temp_array[index] = 0;  // erase
+                }
                 putchar('\n');
             }
             printf("%02X ", *temp_pointer);
+            temp_array[byte_count % 16] = *temp_pointer;
             ++temp_pointer;
             ++byte_count;
         }
