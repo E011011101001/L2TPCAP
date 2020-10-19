@@ -6,22 +6,22 @@
 #include <string.h>
 
 /*
-    |-------------------|
-    |    Ethernet II    |   eth_header
-    |-------------------|
-    |       IPv4        |   ip_header
-    |-------------------|
-    |        UDP        |   udp_header
-    |-------------------|
-    |       L2TP        |
-    |-------------------|
-    |      Payload      |
-    |-------------------|
-
-    in fact, payload still contain lots of protocol header,
-    such as PPP, IPv4(toward other network), Layer 4 protocol: TCP/UDP,
-    even Layer 8 protocol: HTTP.
-*/
+ *   |-------------------|
+ *   |    Ethernet II    |   eth_header
+ *   |-------------------|
+ *   |       IPv4        |   ip_header
+ *   |-------------------|
+ *   |        UDP        |   udp_header
+ *   |-------------------|
+ *   |       L2TP        |
+ *   |-------------------|
+ *   |      Payload      |
+ *   |-------------------|
+ *
+ *   in fact, payload still contain lots of protocol header,
+ *   such as PPP, IPv4(toward other network), Layer 4 protocol: TCP/UDP,
+ *   even Layer 8 protocol: HTTP.
+ */
 void my_packet_handler(
     u_char *args,
     const struct pcap_pkthdr *header,
@@ -53,20 +53,20 @@ void my_packet_handler(
     ip_header = packet + ethernet_header_length;
 
     /*
-        IPv4 4-7 bits are IHL(Internet Header Length)
-        thus, (*ip_header) & 0x0F could store IHL.
-    */
+     *   IPv4 4-7 bits are IHL(Internet Header Length)
+     *   thus, (*ip_header) & 0x0F could store IHL.
+     */
     ip_header_length = ((*ip_header) & 0x0F);
     /*
-        The IPv4 header is variable in size due to the optional 14th field (options).
-        The IHL field contains the size of the IPv4 header,
-        it has 4 bits that specify the number of 32-bit words in the header.
-        The minimum value for this field is 5,[28]
-        which indicates a length of 5 × 32 bits = 160 bits = 20 bytes.
-        As a 4-bit field, the maximum value is 15,
-        this means that the maximum size of the IPv4 header is 15 × 32 bits,
-        or 480 bits = 60 bytes.
-    */
+     *   The IPv4 header is variable in size due to the optional 14th field (options).
+     *   The IHL field contains the size of the IPv4 header,
+     *   it has 4 bits that specify the number of 32-bit words in the header.
+     *   The minimum value for this field is 5,[28]
+     *   which indicates a length of 5 × 32 bits = 160 bits = 20 bytes.
+     *   As a 4-bit field, the maximum value is 15,
+     *   this means that the maximum size of the IPv4 header is 15 × 32 bits,
+     *   or 480 bits = 60 bytes.
+     */
     ip_header_length = ip_header_length * 4;
     printf("IP header length (IHL) in bytes: %d\n", ip_header_length);
 
@@ -79,28 +79,28 @@ void my_packet_handler(
 
     udp_header = packet + ethernet_header_length + ip_header_length;
     /*
-        UDP header length is on the 4th and 5th bytes,
-        so it needs to add two bytes result.
-        There is udp_header_length(bytes)
-    */
+     *   UDP header length is on the 4th and 5th bytes,
+     *   so it needs to add two bytes result.
+     *   There is udp_header_length(bytes)
+     */
     udp_header_length = (((*(udp_header + 4)) & 0xFF) << 8) | (((*(udp_header + 5)) & 0xFF));
     printf("UDP header length in bytes: %d\n", udp_header_length);
 
     // l2tp
     l2tp_header = packet + ethernet_header_length + ip_header_length + udp_header_length;
     /*
-         0                   1                   2                   3
-         0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
-        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-        |T|L|x|x|S|x|O|P|x|x|x|x|  Ver  |          Length (opt)         |
-        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-        |           Tunnel ID           |           Session ID          |
-        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-        |             Ns (opt)          |             Nr (opt)          |
-        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-        |      Offset Size (opt)        |    Offset pad... (opt)        |
-        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    */
+     *    0                   1                   2                   3
+     *    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+     *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     *   |T|L|x|x|S|x|O|P|x|x|x|x|  Ver  |          Length (opt)         |
+     *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     *   |           Tunnel ID           |           Session ID          |
+     *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     *   |             Ns (opt)          |             Nr (opt)          |
+     *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     *   |      Offset Size (opt)        |    Offset pad... (opt)        |
+     *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     */
     int l2tp_type;
     int l2tp_len_field;
     int l2tp_sequence_field;
@@ -336,7 +336,7 @@ int main(int argc, char **argv) {
     u_char *my_arguments = NULL;
 
     struct bpf_program filter;
-    char filter_exp[] = "tcp";
+    char filter_exp[] = "udp port 1701";
 
     bpf_u_int32 ip, subnet_mask; // bpf_u_int32 is integer type
 
@@ -367,7 +367,7 @@ int main(int argc, char **argv) {
         return ACTIVATE_HANDLE_ERROR;
     }
 
-    // add filter of udp:1401
+    // add filter of udp:1701
     if (pcap_compile(handle, &filter, filter_exp, 0, ip) == PCAP_ERROR) {
         printf("Bad filter - %s\n", pcap_geterr(handle));
         return CONPILE_ERROR;
